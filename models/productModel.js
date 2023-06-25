@@ -8,7 +8,15 @@ const BrandEnum = Object.freeze({
 
 const productSchema = new mongoose.Schema(
   {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
     name: {
+      type: String,
+      required: true,
+    },
+    code: {
       type: String,
       required: true,
     },
@@ -20,7 +28,7 @@ const productSchema = new mongoose.Schema(
     variants: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "ProductVariant",
+        ref: "product_variant",
       },
     ],
     modifiers: [
@@ -37,9 +45,10 @@ const productSchema = new mongoose.Schema(
     ],
   },
   {
+    _id: false,
     timestamps: true,
     strict: "throw",
   }
 );
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports = mongoose.model("product", productSchema);

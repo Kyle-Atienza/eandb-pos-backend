@@ -6,39 +6,6 @@ const PaymentMethodEnum = Object.freeze({
   BANK: "bank",
 });
 
-const itemsTemp = {
-  items: [
-    {
-      product: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: true,
-      },
-      variant: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProductVariant",
-        required: true,
-      },
-      modifier: [
-        {
-          name: {
-            type: String,
-            required: true,
-          },
-          value: {
-            type: String,
-            required: true,
-          },
-        },
-      ],
-      quantity: {
-        type: Number,
-        required: true,
-      },
-    },
-  ],
-};
-
 const invoiceSchema = new mongoose.Schema(
   {
     buyer: {
@@ -55,46 +22,9 @@ const invoiceSchema = new mongoose.Schema(
     },
     items: [
       {
-        id: {
-          type: String,
-          default: true,
-        },
-        ref: {
-          product: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Product",
-            required: true,
-          },
-          variant: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "ProductVariant",
-            required: true,
-          },
-        },
-        modifier: {
-          name: {
-            type: String,
-            required: true,
-          },
-          value: {
-            type: String,
-            required: true,
-          },
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        brand: {
-          type: String,
-          required: true,
-        },
-        variant: {
-          type: String,
-          required: true,
-        },
-        amount: {
-          type: Number,
+        item: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "product_variant",
           required: true,
         },
         quantity: {
@@ -110,4 +40,4 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Invoice", invoiceSchema);
+module.exports = mongoose.model("invoice", invoiceSchema);

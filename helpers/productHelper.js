@@ -1,18 +1,61 @@
-const getProductItemId = (data) => {
-  console.log(data.modifier.name);
-
-  const productName = data.product.name;
-  const productInitials = productName
+const getProductCode = (productName) => {
+  return productName
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase())
     .join("");
+};
 
-  const variantName = data.variant.name;
-  const modifierString = `${data.modifier.name}_${data.modifier.value}`;
+const getProductVariantSku = (productCode, variantName, modifier) => {
+  // const productInitials = getProductCode(productName);
 
-  return `${productInitials}-${variantName}-${modifierString}`;
+  if (!modifier) {
+    return `${productCode}-${variantName}`;
+  }
+
+  const modifierString = `${modifier.name}_${modifier.value}`;
+  return `${productCode}-${variantName}-${modifierString}`;
+};
+
+const mapProductVariants = (product) => {
+  const { variants, modifiers } = product;
+
+  return variants.reduce((variants, variant) => {
+    if (modifiers.length) {
+      modifiers.forEach((modifierItem) => {
+        modifierItem.values.forEach((modifier) => {
+          variants.push({
+            ...variant,
+            name: `${product.name} ${variant.name} ${modifier}`,
+            brand: product.brand,
+            variant: variant.name,
+            sku: getProductVariantSku(product.code, variant.name, {
+              name: modifierItem.name,
+              value: modifier,
+            }),
+            modifier: {
+              name: modifierItem.name,
+              value: modifier,
+            },
+            product: product._id,
+          });
+        });
+      });
+
+      return variants;
+    }
+
+    variants.push({
+      sku: getProductVariantSku(product.code, variant.name),
+      product: product._id,
+      ...variant,
+    });
+
+    return variants;
+  }, []);
 };
 
 module.exports = {
-  getProductItemId,
+  getProductVariantSku,
+  getProductCode,
+  mapProductVariants,
 };

@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Invoice = require("../models/invoiceModel");
+const ProductVariant = require("../models/productVariantModel");
 
 const getInvoices = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -10,7 +11,15 @@ const getInvoices = asyncHandler(async (req, res) => {
     const totalPages = Math.ceil(count / limit);
     const skip = (page - 1) * limit;
 
-    const invoices = await Invoice.find().skip(skip).limit(limit);
+    const invoices = await Invoice.find()
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "items",
+        populate: {
+          path: "item",
+        },
+      });
 
     res.json({
       page,
@@ -27,7 +36,15 @@ const getInvoice = asyncHandler(async (req, res) => {
   const invoiceId = req.params.id;
 
   try {
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await Invoice.findById(invoiceId).populate({
+      path: "items",
+      populate: {
+        path: "item",
+        populate: {
+          path: "product",
+        },
+      },
+    });
 
     res.status(200).json(invoice);
   } catch (error) {
@@ -39,9 +56,20 @@ const createInvoice = asyncHandler(async (req, res) => {
   try {
     const invoice = await Invoice.create(req.body);
 
+    await invoice.populate({
+      path: "items",
+      populate: {
+        path: "item",
+        populate: {
+          path: "product",
+        },
+      },
+    });
+
     res.status(200).json(invoice);
   } catch (error) {
     res.status(500).json({ error: error });
+    throw new Error(error);
   }
 });
 

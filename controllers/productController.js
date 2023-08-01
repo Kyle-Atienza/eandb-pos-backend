@@ -8,151 +8,6 @@ const {
 } = require("../helpers/productHelper");
 const mongoose = require("mongoose");
 
-/* const getProducts = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-
-  try {
-    const count = await Product.countDocuments();
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
-
-    const data = await Product.find()
-      .skip(skip)
-      .limit(limit)
-      .populate({
-        path: "variants",
-        populate: {
-          path: "product",
-        },
-      });
-
-    res.json({
-      page,
-      totalPages,
-      count,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
-}); */
-
-/* const getProducts = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search || "";
-
-  try {
-    const count = await Product.countDocuments({
-      "product.name": { $regex: search, $options: "i" },
-    });
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
-
-    const data = await Product.find({
-      "product.name": { $regex: search, $options: "i" },
-    })
-      .skip(skip)
-      .limit(limit)
-      .populate({
-        path: "variants",
-        populate: {
-          path: "product",
-        },
-      });
-
-    res.json({
-      page,
-      totalPages,
-      count,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
-}); */
-
-/* const getProducts = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-
-  try {
-    const countPipeline = [
-      {
-        $count: "totalDocuments",
-      },
-    ];
-    const [{ totalDocuments: count }] = await Product.aggregate(countPipeline);
-
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
-
-    const dataPipeline = [
-      {
-        $skip: skip,
-      },
-      {
-        $limit: limit,
-      },
-      {
-        $lookup: {
-          from: "variants",
-          localField: "variants",
-          foreignField: "_id",
-          as: "variants",
-        },
-      },
-      {
-        $lookup: {
-          from: "products",
-          localField: "variants.product",
-          foreignField: "_id",
-          as: "variants.product",
-        },
-      },
-      {
-        $unwind: "$variants.product",
-      },
-    ];
-    const data = await Product.aggregate(dataPipeline);
-
-    res.json({
-      page,
-      totalPages,
-      count,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
-}); */
-
-/* const getItems = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-
-  try {
-    const count = await ProductVariant.countDocuments();
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
-
-    const data = await ProductVariant.find()
-      .skip(skip)
-      .limit(limit)
-      .populate("product");
-
-    res.json({
-      page,
-      totalPages,
-      count,
-      data,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
-}); */
-
 const getProducts = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -166,7 +21,7 @@ const getProducts = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limit)
       .populate({
-        path: "variants",
+        path: "items",
         populate: {
           path: "product",
         },
@@ -224,26 +79,23 @@ const getItems = asyncHandler(async (req, res) => {
 
 const createProduct = asyncHandler(async (req, res) => {
   try {
-    const productData = {
+    /* const productData = {
       ...req.body,
       _id: new mongoose.Types.ObjectId(),
     };
 
     const productVariants = await ProductVariant.create(
       mapProductVariants(productData)
-    );
+    ); */
 
-    const product = await Product.create({
-      ...productData,
-      variants: productVariants.map((variant) => variant._id),
-    });
+    const product = await Product.create(req.body);
 
-    await product.populate({
-      path: "variants",
+    /* await product.populate({
+      path: "items",
       populate: {
         path: "product",
       },
-    });
+    }); */
 
     res.status(200).json(product);
   } catch (error) {
@@ -253,11 +105,62 @@ const createProduct = asyncHandler(async (req, res) => {
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
-  const productId = req.params.id;
+  const { id: productId, variant: variantToUpdate } = req.query;
+
   const updateData = req.body;
+  const { variants, modifiers } = req.body;
 
   try {
-    const product = await Product.findByIdAndUpdate(productId, updateData, {
+    /* if (variants) {
+      const product = await Product.findById(productId);
+
+      product.variants.forEach(async (variant) => {
+        const variantExist = variants
+          .map((variant) => variant.name)
+          .includes(variant.name);
+
+        console.log(variantExist);
+
+        await ProductVariant.updateMany(
+          {
+            product: new mongoose.Types.ObjectId(productId),
+            variant: variant.name,
+          },
+          {
+            isDeleted: !variantExist,
+          }
+        );
+      });
+
+      variants.forEach(async (variant) => {
+        const variantExist = await ProductVariant.find({
+          product: new mongoose.Types.ObjectId(productId),
+          variant: variant.name,
+        });
+
+        if (!variantExist.length) {
+          await ProductVariant.create(
+            mapProductVariants({
+              ...product.toObject(),
+              variants: [variant],
+            })
+          );
+        } else {
+          await ProductVariant.updateMany(
+            {
+              product: new mongoose.Types.ObjectId(productId),
+              variant: variant.name,
+            },
+            {
+              name: variant.name,
+              amount: variant.amount,
+            }
+          );
+        }
+      });
+    } */
+
+    const product = await Product.findByIdAndUpdate(productId, req.body, {
       new: true,
     });
 

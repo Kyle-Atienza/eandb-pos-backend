@@ -1,17 +1,8 @@
 const mongoose = require("mongoose");
-
-const BrandEnum = Object.freeze({
-  EANDBFARM: "E and B Farm",
-  THREEK: "Three K",
-  NUTRIPAGE: "NutriPage",
-});
+const brandEnum = require("./enums/brandEnum");
 
 const productSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
     name: {
       type: String,
       required: true,
@@ -22,30 +13,39 @@ const productSchema = new mongoose.Schema(
     },
     brand: {
       type: String,
-      enum: Object.values(BrandEnum),
+      enum: Object.values(brandEnum),
       required: true,
     },
-    variants: [
+    items: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "product_variant",
       },
     ],
-    modifiers: [
+    variants: [
       {
         name: {
           type: String,
           required: true,
         },
-        values: {
-          type: [String],
+        amount: {
+          type: Number,
           required: true,
         },
       },
     ],
+    modifier: {
+      name: {
+        type: String,
+        required: true,
+      },
+      values: {
+        type: [String],
+        required: true,
+      },
+    },
   },
   {
-    _id: false,
     timestamps: true,
     strict: "throw",
   }

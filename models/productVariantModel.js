@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const productVariantSchema = new mongoose.Schema({
   sku: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
@@ -23,7 +22,6 @@ const productVariantSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
   },
   modifier: {
     type: {
@@ -41,6 +39,11 @@ const productVariantSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "product",
     required: true,
+  },
+  isDeleted: {
+    type: Boolean,
+    required: true,
+    default: false,
   },
 });
 

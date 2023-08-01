@@ -17,7 +17,39 @@ const getProductVariantSku = (productCode, variantName, modifier) => {
 };
 
 const mapProductVariants = (product) => {
-  const { variants, modifiers } = product;
+  const { name, brand, code, _id, variants, modifier } = product;
+
+  return variants.reduce((variants, variant) => {
+    if (modifier) {
+      modifier.values.forEach((modifierValue) => {
+        variants.push({
+          ...variant,
+          name: `${product.name} ${variant.name} ${modifierValue}`,
+          brand: product.brand,
+          variant: variant.name,
+          modifier: {
+            name: modifier.name,
+            value: modifierValue,
+          },
+          product: product._id,
+        });
+      });
+
+      return variants;
+    }
+
+    variants.push({
+      sku: getProductVariantSku(product.code, variant.name),
+      product: product._id,
+      ...variant,
+    });
+
+    return variants;
+  }, []);
+};
+
+/* const mapProductVariants = (product) => {
+  const { name, brand, code, _id, variants, modifiers } = product;
 
   return variants.reduce((variants, variant) => {
     if (modifiers.length) {
@@ -52,7 +84,7 @@ const mapProductVariants = (product) => {
 
     return variants;
   }, []);
-};
+}; */
 
 module.exports = {
   getProductVariantSku,

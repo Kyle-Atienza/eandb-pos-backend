@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const brandEnum = require("./enums/brandEnum");
 
 const PaymentMethodEnum = Object.freeze({
   CASH: "cash",
@@ -22,14 +23,38 @@ const invoiceSchema = new mongoose.Schema(
     },
     items: [
       {
-        item: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "product_variant",
+        id: {
+          type: String,
           required: true,
         },
-        quantity: {
-          type: Number,
+        name: {
+          type: String,
           required: true,
+        },
+        brand: {
+          type: String,
+          enum: Object.values(brandEnum),
+          required: true,
+        },
+        variant: {
+          name: {
+            type: String,
+            required: true,
+          },
+          amount: {
+            type: Number,
+            required: true,
+          },
+        },
+        modifier: {
+          name: {
+            type: String,
+            required: true,
+          },
+          value: {
+            type: String,
+            required: true,
+          },
         },
       },
     ],

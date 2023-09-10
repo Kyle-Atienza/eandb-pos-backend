@@ -23,41 +23,24 @@ const invoiceSchema = new mongoose.Schema(
     },
     items: [
       {
-        id: {
+        item: {
           type: String,
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        brand: {
-          type: String,
-          enum: Object.values(brandEnum),
           required: true,
         },
         variant: {
-          name: {
-            type: String,
-            required: true,
-          },
-          amount: {
-            type: Number,
-            required: true,
-          },
+          type: mongoose.Types.ObjectId,
+          required: true,
         },
-        modifier: {
-          name: {
-            type: String,
-            required: true,
-          },
-          value: {
-            type: String,
-            required: true,
-          },
+        quantity: {
+          type: Number,
+          required: true,
         },
       },
     ],
+    total: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,

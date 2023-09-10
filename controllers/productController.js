@@ -17,15 +17,13 @@ const getProducts = asyncHandler(async (req, res) => {
     const totalPages = Math.ceil(count / limit);
     const skip = (page - 1) * limit;
 
-    const data = await Product.find()
-      .skip(skip)
-      .limit(limit)
-      .populate({
+    const data = await Product.find().skip(skip).limit(limit);
+    /* .populate({
         path: "items",
         populate: {
           path: "product",
         },
-      });
+      }); */
 
     res.json({
       page,
@@ -111,55 +109,6 @@ const updateProduct = asyncHandler(async (req, res) => {
   const { variants, modifiers } = req.body;
 
   try {
-    /* if (variants) {
-      const product = await Product.findById(productId);
-
-      product.variants.forEach(async (variant) => {
-        const variantExist = variants
-          .map((variant) => variant.name)
-          .includes(variant.name);
-
-        console.log(variantExist);
-
-        await ProductVariant.updateMany(
-          {
-            product: new mongoose.Types.ObjectId(productId),
-            variant: variant.name,
-          },
-          {
-            isDeleted: !variantExist,
-          }
-        );
-      });
-
-      variants.forEach(async (variant) => {
-        const variantExist = await ProductVariant.find({
-          product: new mongoose.Types.ObjectId(productId),
-          variant: variant.name,
-        });
-
-        if (!variantExist.length) {
-          await ProductVariant.create(
-            mapProductVariants({
-              ...product.toObject(),
-              variants: [variant],
-            })
-          );
-        } else {
-          await ProductVariant.updateMany(
-            {
-              product: new mongoose.Types.ObjectId(productId),
-              variant: variant.name,
-            },
-            {
-              name: variant.name,
-              amount: variant.amount,
-            }
-          );
-        }
-      });
-    } */
-
     const product = await Product.findByIdAndUpdate(productId, req.body, {
       new: true,
     });
@@ -169,9 +118,52 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
 
     res.status(200).json(product);
+    // res.status(200).json(req.body);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server Error" });
+    res
+      .status(500)
+      .json({ error: "Server error", message: "Cannot update product" });
+  }
+});
+
+const addItem = asyncHandler(async (req, res) => {
+  const { id: productId, variant: variantToUpdate } = req.query;
+
+  try {
+    let product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    product = await Product.updateOne(
+      {
+        _id: product._id,
+      },
+      {
+        $set: {
+          variants: [...product.variants, req.body],
+        },
+      }
+    );
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Server error", message: "Cannot update product" });
+  }
+});
+
+const updateProductImage = asyncHandler(async (req, res) => {
+  try {
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "Server error", message: "Cannot update product image" });
   }
 });
 
@@ -188,7 +180,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server Error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -197,5 +189,7 @@ module.exports = {
   getItems,
   createProduct,
   updateProduct,
+  updateProductImage,
   deleteProduct,
+  addItem,
 };

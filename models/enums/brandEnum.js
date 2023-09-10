@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-  CASH: "cash",
-  GCASH: "GCash",
-  BANK: "bank",
+  EABF: "E and B Farm",
+  NP: "NutriPage",
+  "3K": "ThreeK",
 });

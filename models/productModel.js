@@ -9,21 +9,19 @@ const productSchema = new mongoose.Schema(
     },
     code: {
       type: String,
-      required: true,
+      required: false,
     },
     brand: {
       type: String,
       enum: Object.values(brandEnum),
       required: true,
     },
-    items: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "product_variant",
-      },
-    ],
     variants: [
       {
+        image: {
+          type: String,
+          required: false,
+        },
         name: {
           type: String,
           required: true,
@@ -32,16 +30,20 @@ const productSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        isDeleted: {
+          type: Boolean,
+          required: true,
+        },
       },
     ],
     modifier: {
       name: {
         type: String,
-        required: true,
+        required: false,
       },
       values: {
         type: [String],
-        required: true,
+        required: false,
       },
     },
   },

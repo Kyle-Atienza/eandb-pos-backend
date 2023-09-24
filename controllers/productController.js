@@ -17,13 +17,12 @@ const getProducts = asyncHandler(async (req, res) => {
     const totalPages = Math.ceil(count / limit);
     const skip = (page - 1) * limit;
 
-    const data = await Product.find().skip(skip).limit(limit);
-    /* .populate({
-        path: "items",
-        populate: {
-          path: "product",
-        },
-      }); */
+    // const data = await Product.find().skip(skip).limit(limit);
+    const data = await Product.aggregate([
+      { $match: { isDeleted: false } },
+      { $skip: skip },
+      { $limit: limit },
+    ]);
 
     res.json({
       page,
@@ -118,7 +117,6 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
 
     res.status(200).json(product);
-    // res.status(200).json(req.body);
   } catch (error) {
     console.error(error);
     res

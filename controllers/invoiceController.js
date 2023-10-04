@@ -5,14 +5,30 @@ const ProductVariant = require("../models/productVariantModel");
 
 const getInvoices = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit =
+    parseInt(req.query.limit) === -1 ? 0 : parseInt(req.query.limit) || 10;
 
   try {
+    const totalMin = 0;
+    const totalMax = 0;
+
+    const query = {
+      buyer: new RegExp("", "i"),
+      total: {
+        $gte: totalMin || 1,
+        $lte: totalMax,
+      },
+    };
+
+    if (!totalMax) {
+      delete query.total.$lte;
+    }
+
     const count = await Invoice.countDocuments();
     const totalPages = Math.ceil(count / limit);
     const skip = (page - 1) * limit;
 
-    const invoices = await Invoice.find().skip(skip).limit(limit);
+    const invoices = await Invoice.find(query).skip(skip).limit(limit);
 
     res.json({
       page,
@@ -47,10 +63,7 @@ const getInvoice = asyncHandler(async (req, res) => {
         return {
           name: product.name,
           variant: item._doc,
-          modifier: {
-            name: product.modifier?.name,
-            value: modiferValue,
-          },
+          modifier: modiferValue,
         };
       } else {
         return {

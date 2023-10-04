@@ -29,7 +29,7 @@ const invoiceSchema = new mongoose.Schema(
         },
         variant: {
           type: mongoose.Types.ObjectId,
-          required: true,
+          required: false,
         },
         quantity: {
           type: Number,

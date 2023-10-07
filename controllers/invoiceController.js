@@ -4,36 +4,68 @@ const Product = require("../models/productModel");
 const ProductVariant = require("../models/productVariantModel");
 
 const getInvoices = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit =
-    parseInt(req.query.limit) === -1 ? 0 : parseInt(req.query.limit) || 10;
+  const {
+    page,
+    buyer,
+    total_min,
+    total_max,
+    items_min,
+    items_max,
+    date_min,
+    date_max,
+  } = req.query;
 
   try {
-    const totalMin = 0;
-    const totalMax = 0;
-
-    const query = {
-      buyer: new RegExp("", "i"),
-      total: {
-        $gte: totalMin || 1,
-        $lte: totalMax,
-      },
-    };
-
-    if (!totalMax) {
-      delete query.total.$lte;
+    let limit = parseInt(req.query.limit);
+    if (limit) {
+      if (limit === -1) {
+        limit = 0;
+      }
+    } else {
+      limit = 10;
     }
 
-    const count = await Invoice.countDocuments();
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
+    const skip = !limit ? 1 : ((parseInt(page) || 1) - 1) * limit;
 
-    const invoices = await Invoice.find(query).skip(skip).limit(limit);
+    const aggregation = [
+      {
+        $addFields: {
+          itemsSize: { $size: "$items" },
+        },
+      },
+      {
+        $match: {
+          buyer: { $regex: buyer || "", $options: "i" },
+          total: { $gte: parseInt(total_min) || 1 },
+          itemsSize: { $gte: parseInt(items_min) || 1 },
+          createdAt: {
+            $gte: new Date(0),
+            $lte: new Date(),
+          },
+        },
+      },
+      { $skip: skip },
+    ];
+
+    if (parseInt(total_max)) {
+      aggregation[1].$match.total.$lte = parseInt(total_max);
+    }
+    if (parseInt(items_max)) {
+      aggregation[1].$match.itemsSize.$lte = parseInt(items_max);
+    }
+    if (date_min) {
+      aggregation[1].$match.createdAt.$gte = new Date(date_min);
+    }
+    if (date_max) {
+      aggregation[1].$match.createdAt.$lte = new Date(date_max);
+    }
+
+    const invoices = await Invoice.aggregate(aggregation);
 
     res.json({
       page,
-      totalPages,
-      count,
+      totalPages: Math.ceil(invoices.length / limit),
+      count: invoices.length,
       data: invoices,
     });
   } catch (error) {

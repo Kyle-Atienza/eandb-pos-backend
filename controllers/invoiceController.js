@@ -24,7 +24,6 @@ const getInvoices = asyncHandler(async (req, res) => {
     } else {
       limit = 10;
     }
-
     const skip = !limit ? 1 : ((parseInt(page) || 1) - 1) * limit;
 
     const aggregation = [
@@ -58,6 +57,11 @@ const getInvoices = asyncHandler(async (req, res) => {
     }
     if (date_max) {
       aggregation[1].$match.createdAt.$lte = new Date(date_max);
+    }
+    if (limit) {
+      aggregation.push({
+        $limit: limit,
+      });
     }
 
     const invoices = await Invoice.aggregate(aggregation);
@@ -144,7 +148,6 @@ const updateInvoice = asyncHandler(async (req, res) => {
 
     res.status(200).json(invoice);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 });

@@ -5,6 +5,6 @@ const {
   getInvoiceAnalytics,
 } = require("../controllers/analyticsController.js");
 
-router.get("/invoices", getInvoiceAnalytics);
+router.get("/invoice", getInvoiceAnalytics);
 
 module.exports = router;

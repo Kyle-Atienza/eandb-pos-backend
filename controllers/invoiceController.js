@@ -43,6 +43,11 @@ const getInvoices = asyncHandler(async (req, res) => {
         },
       },
       { $skip: skip },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
     ];
 
     if (parseInt(total_max)) {

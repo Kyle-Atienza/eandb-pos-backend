@@ -1,22 +1,3 @@
-/* const data = {
-  totalSales: 12,
-  totalTransactions: 12,
-  bestSeller: {
-    product: {
-      name: "",
-      image: "",
-      totalSold: "",
-      variant: "",
-      modifier: "",
-    },
-  },
-  salesPerBrand: {
-    "E and B Farm": 12,
-    NutriPage: 12,
-    ThreeK: 12,
-  },
-}; */
-
 const asyncHandler = require("express-async-handler");
 const Invoice = require("../models/invoiceModel");
 const Product = require("../models/productModel");
@@ -30,8 +11,7 @@ const getInvoiceAnalytics = asyncHandler(async (req, res) => {
       {
         $match: {
           createdAt: {
-            $gte: new Date(0),
-            $lte: new Date(),
+            $gte: new Date(new Date().setUTCHours(0, 0, 0, 0)),
           },
         },
       },
@@ -45,86 +25,100 @@ const getInvoiceAnalytics = asyncHandler(async (req, res) => {
     }
 
     const invoices = await Invoice.aggregate(aggregation);
-    const invoiceItems = invoices.map((invoice) => invoice.items).flat();
+    const invoiceItems = invoices.length
+      ? invoices?.map((invoice) => invoice.items).flat()
+      : [];
 
     // Total Sales
-    const totalSales = invoices.reduce((total, invoice) => {
+    const totalSales = invoices?.reduce((total, invoice) => {
       total += invoice.total;
       return total;
     }, 0);
 
     // Total Transactions
-    const totalTransactions = invoices.length;
+    const totalTransactions = invoices?.length;
 
     // Best Seller
-    const groupedInvoiceByItems = invoiceItems.reduce((grouped, item) => {
-      const key = item.item;
+    let bestSellerProduct = {};
+    if (invoiceItems.length) {
+      const groupedInvoiceByItems = invoiceItems.reduce((grouped, item) => {
+        const key = item.item;
 
-      if (!grouped[key]) {
-        grouped[key] = [];
+        if (!grouped[key]) {
+          grouped[key] = [];
+        }
+
+        grouped[key].push(item);
+
+        return grouped;
+      }, {});
+
+      let longestKey = null;
+      let maxLength = 0;
+      for (const key in groupedInvoiceByItems) {
+        if (groupedInvoiceByItems[key].length > maxLength) {
+          longestKey = key;
+          maxLength = groupedInvoiceByItems[key].length;
+        }
       }
-
-      grouped[key].push(item);
-
-      return grouped;
-    }, {});
-
-    let longestKey = null;
-    let maxLength = 0;
-    for (const key in groupedInvoiceByItems) {
-      if (groupedInvoiceByItems[key].length > maxLength) {
-        longestKey = key;
-        maxLength = groupedInvoiceByItems[key].length;
-      }
-    }
-    const totalProductQuantity = groupedInvoiceByItems[longestKey].reduce(
-      (totalQuantity, product) => {
-        totalQuantity += product.quantity;
-        return totalQuantity;
-      },
-      0
-    );
-
-    const [productId, variantId, modifier] = longestKey.split("_");
-    const bestSellerProduct = await Product.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(productId),
+      const totalProductQuantity = groupedInvoiceByItems[longestKey].reduce(
+        (totalQuantity, product) => {
+          totalQuantity += product.quantity;
+          return totalQuantity;
         },
-      },
-      {
-        $project: {
-          name: "$name",
-          variant: {
-            $let: {
-              vars: {
-                filterVariant: {
-                  $filter: {
-                    input: "$variants",
-                    as: "variant",
-                    cond: {
-                      $cmp: ["$$variant._id", variantId],
+        0
+      );
+
+      const [productId, variantId, modifier] = longestKey.split("_");
+      const product = await Product.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(productId),
+          },
+        },
+        {
+          $project: {
+            name: "$name",
+            variant: {
+              $let: {
+                vars: {
+                  filterVariant: {
+                    $filter: {
+                      input: "$variants",
+                      as: "variant",
+                      cond: {
+                        $cmp: ["$$variant._id", variantId],
+                      },
                     },
                   },
                 },
+                in: { $arrayElemAt: ["$$filterVariant", 0] },
               },
-              in: { $arrayElemAt: ["$$filterVariant", 0] },
             },
           },
         },
-      },
-      {
-        $addFields: {
-          totalSold: groupedInvoiceByItems[longestKey].length,
-          totalProductSales: {
-            $multiply: ["$variant.amount", totalProductQuantity],
+        {
+          $addFields: {
+            totalSold: groupedInvoiceByItems[longestKey].reduce(
+              (total, invoice) => {
+                total += invoice.quantity;
+                return total;
+              },
+              0
+            ),
+            totalProductSales: {
+              $multiply: ["$variant.amount", totalProductQuantity],
+            },
           },
         },
-      },
-    ]);
+      ]);
+
+      bestSellerProduct = product[0];
+    }
 
     // Sales Per Brand
     const groupedInvoiceByBrand = await Invoice.aggregate([
+      aggregation[0],
       { $unwind: "$items" },
       {
         $addFields: {
@@ -170,12 +164,10 @@ const getInvoiceAnalytics = asyncHandler(async (req, res) => {
       },
     ]);
 
-    // console.log(groupedInvoiceByBrand);
-
     res.json({
       totalSales,
       totalTransactions,
-      bestSellerProduct: bestSellerProduct[0],
+      bestSellerProduct,
       groupedInvoiceByBrand,
     });
   } catch (error) {

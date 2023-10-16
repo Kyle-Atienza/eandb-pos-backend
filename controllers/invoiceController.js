@@ -1,7 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Invoice = require("../models/invoiceModel");
 const Product = require("../models/productModel");
-const ProductVariant = require("../models/productVariantModel");
 
 const getInvoices = asyncHandler(async (req, res) => {
   const {

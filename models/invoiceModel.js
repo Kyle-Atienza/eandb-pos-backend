@@ -41,6 +41,18 @@ const invoiceSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    amountReceived: {
+      type: Number,
+      required: function () {
+        return this.paymentMethod === PaymentMethodEnum.CASH;
+      },
+    },
+    change: {
+      type: Number,
+      required: function () {
+        return this.paymentMethod === PaymentMethodEnum.CASH;
+      },
+    },
   },
   {
     timestamps: true,

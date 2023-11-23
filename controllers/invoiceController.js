@@ -1,23 +1,79 @@
 const asyncHandler = require("express-async-handler");
 const Invoice = require("../models/invoiceModel");
 const Product = require("../models/productModel");
-const ProductVariant = require("../models/productVariantModel");
 
 const getInvoices = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const {
+    page,
+    buyer,
+    total_min,
+    total_max,
+    items_min,
+    items_max,
+    date_min,
+    date_max,
+  } = req.query;
 
   try {
-    const count = await Invoice.countDocuments();
-    const totalPages = Math.ceil(count / limit);
-    const skip = (page - 1) * limit;
+    let limit = parseInt(req.query.limit);
+    if (limit) {
+      if (limit === -1) {
+        limit = 0;
+      }
+    } else {
+      limit = 10;
+    }
+    const skip = !limit ? 1 : ((parseInt(page) || 1) - 1) * limit;
 
-    const invoices = await Invoice.find().skip(skip).limit(limit);
+    const aggregation = [
+      {
+        $addFields: {
+          itemsSize: { $size: "$items" },
+        },
+      },
+      {
+        $match: {
+          buyer: { $regex: buyer || "", $options: "i" },
+          total: { $gte: parseInt(total_min) || 1 },
+          itemsSize: { $gte: parseInt(items_min) || 1 },
+          createdAt: {
+            $gte: new Date(0),
+            $lte: new Date(),
+          },
+        },
+      },
+      { $skip: skip },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ];
+
+    if (parseInt(total_max)) {
+      aggregation[1].$match.total.$lte = parseInt(total_max);
+    }
+    if (parseInt(items_max)) {
+      aggregation[1].$match.itemsSize.$lte = parseInt(items_max);
+    }
+    if (date_min) {
+      aggregation[1].$match.createdAt.$gte = new Date(date_min);
+    }
+    if (date_max) {
+      aggregation[1].$match.createdAt.$lte = new Date(date_max);
+    }
+    if (limit) {
+      aggregation.push({
+        $limit: limit,
+      });
+    }
+
+    const invoices = await Invoice.aggregate(aggregation);
 
     res.json({
       page,
-      totalPages,
-      count,
+      totalPages: Math.ceil(invoices.length / limit),
+      count: invoices.length,
       data: invoices,
     });
   } catch (error) {
@@ -47,10 +103,7 @@ const getInvoice = asyncHandler(async (req, res) => {
         return {
           name: product.name,
           variant: item._doc,
-          modifier: {
-            name: product.modifier?.name,
-            value: modiferValue,
-          },
+          modifier: modiferValue,
         };
       } else {
         return {
@@ -99,7 +152,6 @@ const updateInvoice = asyncHandler(async (req, res) => {
 
     res.status(200).json(invoice);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 });

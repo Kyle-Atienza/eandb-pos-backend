@@ -9,6 +9,9 @@ const {
 const mongoose = require("mongoose");
 
 const getProducts = asyncHandler(async (req, res) => {
+  const { name } = req.query;
+  const brands = req.query.brands ? req.query.brands.split(", ") : undefined;
+
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
 
@@ -17,13 +20,28 @@ const getProducts = asyncHandler(async (req, res) => {
     const totalPages = Math.ceil(count / limit);
     const skip = (page - 1) * limit;
 
-    const data = await Product.find().skip(skip).limit(limit);
-    /* .populate({
-        path: "items",
-        populate: {
-          path: "product",
+    let aggregation = [
+      {
+        $addFields: {
+          commonBrands: {
+            $size: { $setIntersection: [["$brand"], brands || []] },
+          },
         },
-      }); */
+      },
+      {
+        $match: {
+          commonBrands: {
+            $gte: brands ? 1 : 0,
+          },
+          name: { $regex: name || "", $options: "i" },
+          isDeleted: false,
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    const data = await Product.aggregate(aggregation);
 
     res.json({
       page,
@@ -118,7 +136,6 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
 
     res.status(200).json(product);
-    // res.status(200).json(req.body);
   } catch (error) {
     console.error(error);
     res

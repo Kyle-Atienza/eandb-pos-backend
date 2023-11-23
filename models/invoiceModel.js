@@ -29,7 +29,7 @@ const invoiceSchema = new mongoose.Schema(
         },
         variant: {
           type: mongoose.Types.ObjectId,
-          required: true,
+          required: false,
         },
         quantity: {
           type: Number,
@@ -40,6 +40,18 @@ const invoiceSchema = new mongoose.Schema(
     total: {
       type: Number,
       required: true,
+    },
+    amountReceived: {
+      type: Number,
+      required: function () {
+        return this.paymentMethod === PaymentMethodEnum.CASH;
+      },
+    },
+    change: {
+      type: Number,
+      required: function () {
+        return this.paymentMethod === PaymentMethodEnum.CASH;
+      },
     },
   },
   {

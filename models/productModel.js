@@ -16,6 +16,11 @@ const productSchema = new mongoose.Schema(
       enum: Object.values(brandEnum),
       required: true,
     },
+    isDeleted: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
     variants: [
       {
         image: {

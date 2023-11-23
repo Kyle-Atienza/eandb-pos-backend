@@ -28,7 +28,8 @@ app.use(errorHandler);
 
 app.use("/products", require("./routes/productRoutes"));
 app.use("/invoices", require("./routes/invoiceRoutes"));
-// app.use("/uploads");
+app.use("/analytics", require("./routes/analyticsRoutes"));
+app.use("/reports", require("./routes/reportRoutes"));
 
 app.listen(port, () => {
   console.log("E and B POS initiated at port " + port);

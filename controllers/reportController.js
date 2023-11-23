@@ -82,7 +82,7 @@ const getInvoiceReport = asyncHandler(async (req, res) => {
     recipient,
     date_min,
     date_max,
-    brands,
+    brands = "",
     product,
     grouped = true,
   } = req.query;
@@ -102,8 +102,6 @@ const getInvoiceReport = asyncHandler(async (req, res) => {
       ...addFieldsAndSet,
       ...cleanupAndSort,
     ]);
-
-    console.log();
 
     if (invoices.length) {
       const invoice = invoices[0];
